@@ -7,10 +7,14 @@ def estimate_eta(order, partner, travel, now=0):
     if leg1 is None or leg2 is None:
         return {'partner_id':partner.get('partner_id'),'eta_minutes':None,'eligible':False}
     pickup=now+leg1+partner.get('workload_minutes',0)
-    return {'partner_id':partner.get('partner_id'),'pickup_minutes':pickup,'eta_minutes':pickup+order.get('prep_minutes',0)+leg2,'eligible':True}
-
+    if partner.get('active') == True and len(partner.get('active_order_ids')) < partner.get('capacity'):
+        eta_minutes = pickup +leg2 + order.get('prep_minutes',0)
+        return {'partner_id':partner.get('partner_id'),'pickup_minutes':pickup,'eta_minutes': eta_minutes,'eligible':True}
+    return {'partner_id':partner.get('partner_id'),'eta_minutes':None,'eligible':False}
 
 def assign_order(order, partners, travel, now=0):
+    if order.get('order_id') == None or order.get('restaurant_id') == None or order.get('destination_zone') == None or order.get('prep_minutes',0) < 0:
+        return {'order_id': order.get('order_id'), 'partner_id':None,'eta_minutes': None ,'reason': 'Malformed order data or negative time'}
     options=[]
     for partner in partners:
         # Starter is intentionally incomplete: active/capacity/time validation is missing.
